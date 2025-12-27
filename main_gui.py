@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+from budget_strategy import BudgetChecker, WarningBudgetStrategy
 import sys
 from datetime import date
 from collections import defaultdict
@@ -302,6 +302,23 @@ class App(QWidget):
         m = self._current_month()
         income, expense_total, by_cat = self._month_stats(m)
         balance = income - expense_total
+    def _show_budget_alert_for_month(self, m: str):
+    _, _, by_cat = self._month_stats(m)
+
+    # ✅【策略模式實際使用】
+    checker = BudgetChecker(WarningBudgetStrategy())
+    for cat, spent in by_cat.items():
+        budget = self.budgets.get(cat, 0)
+        if budget <= 0:
+            continue
+        result = checker.run(spent, budget)
+
+        if result == "超支":
+            QMessageBox.critical(self, "超支警示", f"{cat} 已超過預算")
+            return
+        elif result == "接近超支":
+            QMessageBox.warning(self, "接近超支", f"{cat} 接近預算上限")
+            return
 
         near, over = check_budget(by_cat, self.budgets, near_threshold=0.8)
 
@@ -336,3 +353,4 @@ if __name__ == "__main__":
     w = App()
     w.show()
     sys.exit(app.exec_())
+
